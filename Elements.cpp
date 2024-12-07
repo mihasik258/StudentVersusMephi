@@ -6,8 +6,8 @@ Elements::Elements() = default;
 void Elements::genSkySun(){
     srand(time(nullptr));
     Sun temp;
-    temp.final_row = rand() % 5;
-    temp.final_col = rand() % 9;
+    temp.final_row = rand() % VERT_BLOCK_COUNT;
+    temp.final_col = rand() % HORIZ_BLOCK_COUNT;
     temp.y_location = INIT_SUN_Y;
     temp.wait_seconds = 0;
     suns.push_back(temp);
@@ -22,7 +22,7 @@ void Elements::genPlantSun(Plant* plant, const Map<Block> &map) {
     temp.final_col = plant->col;
     temp.final_row = plant->row;
     auto [left_bound, right_bound] = map.getVerticalLimits(plant->row, plant->col);
-    temp.y_location = left_bound - 20;
+    temp.y_location = left_bound;
     temp.wait_seconds = 0;
     suns.push_back(temp);
 }
@@ -63,7 +63,6 @@ void Elements::moveZombies(const Map<Block> &map){
 }
 bool Elements::canPeaMove(Pea & pea, const Map<Block> &map){
     auto [left_bound, right_bound] = map.getHorizontalLimits(pea.row, 8);
-    right_bound -= 20;
     if (pea.x_location + PEA_DX > right_bound)
         return false;
     for (auto & zombie : zombies)
@@ -82,7 +81,7 @@ void Elements::moveSuns(const Map<Block> &map){
         int row = sun.final_row;
         int col = sun.final_col;
         auto [left_bound, right_bound] = map.getVerticalLimits(row,col);
-        int lower_limit = left_bound + 30;
+        int lower_limit = left_bound;
         if (sun.y_location + SUN_DY < lower_limit)
             sun.y_location += SUN_DY;
         else
