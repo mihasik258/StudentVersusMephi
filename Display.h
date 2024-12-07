@@ -17,7 +17,7 @@ void displayPeas(window & win, std::vector<Pea*> & peas, const Map<Block> &map){
         int row = pea->row;
         auto [left_bound, right_bound] = map.getHorizontalLimits(0, 8);
         auto [upper_bound, lower_bound] = map.getVerticalLimits(row, 0);
-        int y_location = upper_bound + 20;
+        int y_location = upper_bound + PEA_HEIGHT;
         if (pea->x_location < (right_bound - 35))
             win.draw_png(pea->directory, pea->x_location, y_location, PEA_WIDTH, PEA_HEIGHT);
     }
@@ -29,16 +29,16 @@ void displayPlants(window &win, const std::vector<std::unique_ptr<Plant>> &plant
         auto [left_bound, right_bound] = map.getHorizontalLimits(row, col);
         auto [upper_bound, lower_bound] = map.getVerticalLimits(row, col);
         if (auto walnut = dynamic_cast<Walnut*>(plant.get())) {
-            win.draw_png(walnut->directory, left_bound + 9, upper_bound + 9, ELEMENT_WIDTH, ELEMENT_HEIGHT);
+            win.draw_png(walnut->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
         }
         else if (auto peashooter = dynamic_cast<Peashooter*>(plant.get())) {
-            win.draw_png(peashooter->directory, left_bound + 9, upper_bound + 9, ELEMENT_WIDTH, ELEMENT_HEIGHT);
+            win.draw_png(peashooter->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
         }
         else if (auto iceshooter = dynamic_cast<Iceshooter*>(plant.get())) {
-            win.draw_png(iceshooter->directory, left_bound + 9, upper_bound + 9, ELEMENT_WIDTH, ELEMENT_HEIGHT);
+            win.draw_png(iceshooter->directory, left_bound , upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
         }
         else if (auto sunflower = dynamic_cast<Sunflower*>(plant.get())) {
-            win.draw_png(sunflower->directory, left_bound + 9, upper_bound + 9, ELEMENT_WIDTH, ELEMENT_HEIGHT);
+            win.draw_png(sunflower->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
         }
     }
 }
@@ -89,9 +89,6 @@ void handleClick(Player & player, Icons & icons, Level & level, Elements & eleme
             player.is_first_click_made = true;
         }
         player.pick_sun_if_clicked_on(elements, map, mouse_x, mouse_y, sun_picked);
-        /*
-        if (!sun_picked && Block::isClickInFrontyard(map, mouse_x, mouse_y))
-            elements.removeClicked(map, mouse_x, mouse_y);*/
     } else if (map.isClickInFrontyard(mouse_x, mouse_y)) {
         if (icons.iconData["walnut"].is_chosen) {
             level.createPlant<Walnut>(player, map, elements, icons, mouse_x, mouse_y, "walnut");
@@ -113,7 +110,6 @@ void readSavedata(Player & player, Level & level){
     std::ifstream myfile ("savedata.txt");
     if (myfile.is_open()){
         getline (myfile,line);
-        //player.name = line;
         getline (myfile, line);
         level.level_num = stoi(line);
         myfile.close();

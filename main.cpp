@@ -11,6 +11,7 @@ int main(){
     window win(WINDOW_WIDTH, WINDOW_HEIGHT);
     init_game(win, level, player, map);
     while(!quit){
+    	bool gameOver = false;
         if (game_characters.hasZombiesPassedBoundary(X_UPPER_LEFT + 5))
             displayLosingMessage(win);
         else if (level.isWaveCompleted(game_characters))
@@ -18,7 +19,7 @@ int main(){
         else {
             icons.displayLayout(win, player);
             displayGameElements(win, game_characters, map);
-            game_characters.handleMovements(map, clk);
+            game_characters.updateAll(map, gameOver, clk);
             level.handleChanges(game_characters, map,clk);
         }
         HANDLE(
@@ -28,7 +29,7 @@ int main(){
                        handleClick(player, icons, level, game_characters, map, mouse_x, mouse_y);
                });
         );
-        clk ++;
+        clk++;
         win.update_screen();
         DELAY(CLK_LENGTH);
     }
