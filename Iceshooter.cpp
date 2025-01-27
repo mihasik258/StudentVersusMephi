@@ -2,11 +2,11 @@
 #include "Constants.h"
 
 Iceshooter::Iceshooter(int row, int col) : Peashooter(row, col) {
-    directory = ICESHOOTER_DIRECTORY;
-    hp_limit = PEASHOOTER_HP_LIMIT;
+    directory = DIRECTORY;
+    hp_limit = HP_LIMIT;
 }
 
-void Iceshooter::fire(std::vector<std::unique_ptr<Pea>> &peas,const Map<Block> &map, std::vector<Zombie> &zombies){
+void Iceshooter::fire(std::vector<std::unique_ptr<Pea>> &peas,const Map<Block> &map, std::vector<std::unique_ptr<Zombie>> &zombies){
     if (zombiesInRow(zombies)) {
         auto new_icepea = std::make_unique<Icepea>();
         new_icepea->row = row;

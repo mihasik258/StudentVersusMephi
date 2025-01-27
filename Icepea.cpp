@@ -3,16 +3,16 @@
 
 
 Icepea::Icepea() {
-    directory = C1_DIRECTORY;
+    directory = DIRECTORY;
 }
-void Icepea::applyEffect(Zombie &zombie){
-    zombie.addEffect("ice");
-    if (zombie.hasEffect("fire") && zombie.hasEffect("ice")) {
-        zombie.removeEffect("fire");
-        zombie.removeEffect("ice");
+void Icepea::applyEffect(Zombie *zombie){
+    zombie->addEffect("ice");
+    if (zombie->hasEffect("fire") && zombie->hasEffect("ice")) {
+        zombie->removeEffect("fire");
+        zombie->removeEffect("ice");
     }
-    else if (zombie.hasEffect("ice")){
-        zombie.speed = STUDENT_DX/2;
+    else if (zombie->hasEffect("ice")){
+        zombie->setSpeed(Zombie::DX/2);
     }
-    zombie.health -= 1;
+    zombie->applyDamage(1);
 }

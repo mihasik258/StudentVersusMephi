@@ -3,53 +3,53 @@
 
 Elements::Elements() = default;
 
-void Elements::genSkySun(){
+void Elements::genSkySun() {
     srand(time(nullptr));
-    Sun temp;
-    temp.final_row = rand() % VERT_BLOCK_COUNT;
-    temp.final_col = rand() % HORIZ_BLOCK_COUNT;
-    temp.y_location = INIT_SUN_Y;
-    temp.wait_seconds = 0;
-    suns.push_back(temp);
+    auto sun = Sun();
+    sun.setFinalRow(rand() % VERT_BLOCK_COUNT);
+    sun.setFinalCol(rand() % HORIZ_BLOCK_COUNT);
+    sun.setYLocation(Sun::INIT_Y);
+    sun.resetWaitSeconds();
+    suns.push_back(std::move(sun));
 }
-void Elements::removeSuns(){
-    for (int i = 0; i < suns.size(); i++)
-        if (suns[i].wait_seconds >= 200)
-            suns.erase(suns.begin() + i);
+void Elements::removeSuns() {
+    suns.erase(std::remove_if(suns.begin(), suns.end(),
+                              [](const Sun &sun) { return sun.getWaitSeconds() >= 200; }),
+               suns.end());
 }
-void Elements::genPlantSun(Plant* plant, const Map<Block> &map) {
-    Sun temp;
-    temp.final_col = plant->col;
-    temp.final_row = plant->row;
-    auto [left_bound, right_bound] = map.getVerticalLimits(plant->row, plant->col);
-    temp.y_location = left_bound;
-    temp.wait_seconds = 0;
-    suns.push_back(temp);
+void Elements::genPlantSun(Plant *plant, const Map<Block> &map) {
+    auto sun = Sun();
+    sun.setFinalRow(plant->getRow());
+    sun.setFinalCol(plant->getCol());
+    auto [left_bound, _] = map.getVerticalLimits(plant->getRow(), plant->getCol());
+    sun.setYLocation(left_bound);
+    sun.resetWaitSeconds();
+    suns.push_back(std::move(sun));
 }
 void Elements::setAllZombiesMoving() {
-    for (Zombie &zombie : zombies) {
-        zombie.is_moving = true;
+    for (auto &zombie : zombies) {
+        zombie->startMoving();
     }
 }
-void Elements::addZombie(const Zombie &zombie) {
-    zombies.push_back(zombie);
+void Elements::addZombie(std::unique_ptr<Zombie> zombie) {
+    zombies.push_back(std::move(zombie)); 
 }
-bool Elements::hasZombieReachedAnyElement(Zombie &zombie, const Map<Block> &map) {
+bool Elements::hasZombieReachedAnyElement(Zombie *zombie, const Map<Block> &map) {
     for (auto &plant : plants) {
         if (plant->isZombieNearby(zombie, map)) {
-            zombie.is_moving = false;
+            zombie->stopMoving();
             return true;
         }
     }
-    zombie.is_moving = true;
+    zombie->startMoving();
     return false;
 }
-bool Elements::canMove(Zombie & zombie, const Map<Block> &map){
+bool Elements::canMove(Zombie *zombie, const Map<Block> &map){
     auto [left_bound, right_bound] = map.getHorizontalLimits(0, 0);
-    int zombie_new_location = zombie.x_location - STUDENT_DX;
+    int zombie_new_location =zombie->xLocation() - Zombie::DX;
     if (zombie_new_location < left_bound)
         return false;
-    if (!zombie.is_moving)
+    if (!zombie->isMoving())
         return false;
     if (hasZombieReachedAnyElement(zombie, map))
         return false;
@@ -57,16 +57,16 @@ bool Elements::canMove(Zombie & zombie, const Map<Block> &map){
 }
 void Elements::moveZombies(const Map<Block> &map){
     for (auto & zombie : zombies){
-        if (canMove(zombie,map))
-            zombie.move();
+        if (canMove(zombie.get(),map))
+            zombie->move();
     }
 }
 bool Elements::canPeaMove(Pea & pea, const Map<Block> &map){
     auto [left_bound, right_bound] = map.getHorizontalLimits(pea.row, 8);
-    if (pea.x_location + PEA_DX > right_bound)
+    if (pea.x_location + Pea::DX > right_bound)
         return false;
     for (auto & zombie : zombies)
-        if (pea.reachedZombie(zombie))
+        if (pea.reachedZombie(zombie.get()))
             return false;
     return true;
 }
@@ -76,33 +76,34 @@ void Elements::movePeas(const Map<Block> &map) {
             pea->move();
     }
 }
-void Elements::moveSuns(const Map<Block> &map){
-    for (auto & sun : suns){
-        int row = sun.final_row;
-        int col = sun.final_col;
-        auto [left_bound, right_bound] = map.getVerticalLimits(row,col);
+void Elements::moveSuns(const Map<Block> &map) {
+    for (auto &sun : suns) {
+        int row = sun.getFinalRow(); 
+        int col = sun.getFinalCol(); 
+        auto [left_bound, right_bound] = map.getVerticalLimits(row, col);
         int lower_limit = left_bound;
-        if (sun.y_location + SUN_DY < lower_limit)
-            sun.y_location += SUN_DY;
-        else
-            sun.wait_seconds ++;
+
+        if (sun.getYLocation() + Sun::DY < lower_limit) {
+            sun.setYLocation(sun.getYLocation() + Sun::DY);
+        } else {
+            sun.incrementWaitSeconds();
+        }
     }
 }
 [[nodiscard]] bool Elements::hasZombiesPassedBoundary(int boundary_x) const {
-    for (const Zombie &zombie : zombies) {
-        if (zombie.x_location < boundary_x) return true;
-    }
+    for (const auto &zombie : zombies) {
+        if (zombie->xLocation() < boundary_x) return true; }
     return false;
 }
 void Elements::handlePlant(const Map<Block> &map) {
     for (auto &plant : plants) {
-        for (Zombie &zombie : zombies) {
-            plant->handleZombie(zombie, map);
+        for (auto &zombie : zombies) {
+            plant->handleZombie(zombie.get(), map);
         }
     }
     plants.erase(
             std::remove_if(plants.begin(), plants.end(), [](const std::unique_ptr<Plant>& plant) {
-                if (plant->is_destroyed) {
+                if (plant->isDestroyed()) {
                     return true;
                 }
                 return false;
@@ -117,13 +118,12 @@ void Elements::firePeas(const Map<Block> &map) {
         }
     }
 }
-// ГОВНО ПЕРЕДЕЛАТЬ
 void Elements::applyHitting(int p_ind, int z_ind) {
-    if (peas[p_ind]->reachedZombie(zombies[z_ind])) {
-        peas[p_ind]->applyEffect(zombies[z_ind]);
+    if (peas[p_ind]->reachedZombie(zombies[z_ind].get())) {
+        peas[p_ind]->applyEffect(zombies[z_ind].get());
         peas.erase(peas.begin() + p_ind);
-        zombies[z_ind].updateAppearance();
-        if (zombies[z_ind].health == 0) {
+        zombies[z_ind]->updateAppearance();
+        if (zombies[z_ind]->getHealth() == 0) {
             zombies.erase(zombies.begin() + z_ind);
         }
     }
@@ -134,10 +134,11 @@ void Elements::handlePea(const Map<Block> &map){
             applyHitting(j, i);
 }
 void Elements::handleMovements(const Map<Block> &map, int clk){
-    if (clk % STUDENT_TIME == 0)
+    if (clk % Zombie::TIME == 0)
         moveZombies(map);
-    if (clk % PEA_TIME == 0)
+    if (clk % Pea::TIME == 0)
         movePeas(map);
-    if (clk % SUN_TIME == 0)
+    if (clk % Sun::TIME == 0)
         moveSuns(map);
 }
+

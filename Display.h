@@ -4,151 +4,133 @@
 #include "Constants.h"
 #include "Level.h"
 
-void displayZombies(window & win, std::vector<Zombie> & zombies, const Map<Block> &map){
-    for (auto & zombie : zombies){
-        int row = zombie.row;
-        auto [upper_bound, lower_bound] = map.getVerticalLimits(row, 0);
-        int y_location = upper_bound;
-        win.draw_png(zombie.directory, zombie.x_location, y_location, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-    }
-}
-void displayPeas(window & win, std::vector<Pea*> & peas, const Map<Block> &map){
-    for (auto & pea : peas){
-        int row = pea->row;
-        auto [left_bound, right_bound] = map.getHorizontalLimits(0, 8);
-        auto [upper_bound, lower_bound] = map.getVerticalLimits(row, 0);
-        int y_location = upper_bound + PEA_HEIGHT;
-        if (pea->x_location < (right_bound - 35))
-            win.draw_png(pea->directory, pea->x_location, y_location, PEA_WIDTH, PEA_HEIGHT);
-    }
-}
-void displayPlants(window &win, const std::vector<std::unique_ptr<Plant>> &plants, const Map<Block> &map) {
-    for (const auto &plant : plants) {
-        int col = plant->col;
-        int row = plant->row;
-        auto [left_bound, right_bound] = map.getHorizontalLimits(row, col);
-        auto [upper_bound, lower_bound] = map.getVerticalLimits(row, col);
-        if (auto walnut = dynamic_cast<Walnut*>(plant.get())) {
-            win.draw_png(walnut->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-        }
-        else if (auto peashooter = dynamic_cast<Peashooter*>(plant.get())) {
-            win.draw_png(peashooter->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-        }
-        else if (auto iceshooter = dynamic_cast<Iceshooter*>(plant.get())) {
-            win.draw_png(iceshooter->directory, left_bound , upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-        }
-        else if (auto sunflower = dynamic_cast<Sunflower*>(plant.get())) {
-            win.draw_png(sunflower->directory, left_bound, upper_bound, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-        }
-    }
-}
-
-void displaySuns(window & win, std::vector<Sun> suns, const Map<Block> &map){
-    for (auto & sun : suns){
-        int col = sun.final_col;
-        auto [left_bound, right_bound] = map.getHorizontalLimits(0, col);
-        int x_location = left_bound;
-        win.draw_png(SUN_DIRECTORY, x_location, sun.y_location, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-    }
-}
-void displayGameElements(window &win, Elements &elements, const Map<Block> &map) {
-    displayZombies(win, elements.zombies, map);
-    displayPlants(win, elements.plants, map);
-    std::vector<Pea*> pea_ptrs;
-    for (const auto &pea : elements.peas) {
-        pea_ptrs.push_back(pea.get());
-    }
-    displayPeas(win, pea_ptrs, map);
-    displaySuns(win, elements.suns, map);
-}
-
-void displayLosingMessage(window & win){
-    win.draw_bg(BLACK_SCREEN_DIRECTORY);
-    win.draw_bg(BACKGROUND_DIM_DIRECTORY);
-    win.draw_png(LOSING_MESSAGE_DIRECTORY, WINDOW_WIDTH/4, WINDOW_HEIGHT/8 - 40, 500, 500);
-}
-
-void displayWinningMessage(window & win){
-    win.draw_bg(BLACK_SCREEN_DIRECTORY);
-    win.draw_bg(BACKGROUND_DIM_DIRECTORY);
-    win.draw_png(WINNING_MESSAGE_DIRECTORY, WINDOW_WIDTH/3, WINDOW_HEIGHT/8 - 60, 300, 550);
-}
-
-bool is_an_icon_chosen(int mouse_x, int mouse_y){
-    if (mouse_x > ICON_BAR_X1 && mouse_x < ICON_BAR_X2 &&
-        mouse_y > ICON_BAR_Y1 && mouse_y < ICON_BAR_Y2)
-        return true;
-    return false;
-}
-
-void handleClick(Player & player, Icons & icons, Level & level, Elements & elements, Map<Block> &map, int mouse_x, int mouse_y){
-    bool sun_picked = false;
-    if (!player.is_first_click_made){
-        if (is_an_icon_chosen(mouse_x, mouse_y)){
-            icons.updateIconSelection(mouse_y);
-            player.is_first_click_made = true;
-        }
-        player.pick_sun_if_clicked_on(elements, map, mouse_x, mouse_y, sun_picked);
-    } else if (map.isClickInFrontyard(mouse_x, mouse_y)) {
-        if (icons.iconData["walnut"].is_chosen) {
-            level.createPlant<Walnut>(player, map, elements, icons, mouse_x, mouse_y, "walnut");
-        } else if (icons.iconData["peashooter"].is_chosen) {
-            level.createPlant<Peashooter>(player, map, elements, icons, mouse_x, mouse_y, "peashooter");
-        } else if (icons.iconData["iceshooter"].is_chosen) {
-            level.createPlant<Iceshooter>(player, map, elements, icons, mouse_x, mouse_y, "iceshooter");
-        } else if (icons.iconData["fireshooter"].is_chosen) {
-            level.createPlant<Fireshooter>(player, map, elements, icons, mouse_x, mouse_y, "fireshooter");
-        } else if (icons.iconData["sunflower"].is_chosen) {
-            level.createPlant<Sunflower>(player, map, elements, icons, mouse_x, mouse_y, "sunflower");
-        }
-        player.is_first_click_made = false;
-    }
-}
-
-void readSavedata(Player & player, Level & level){
-    std::string line;
-    std::ifstream myfile ("savedata.txt");
-    if (myfile.is_open()){
-        getline (myfile,line);
-        getline (myfile, line);
-        level.level_num = stoi(line);
-        myfile.close();
-    }
-    else std::cout << "Unable to open file";
-}
-
-bool clickedStart(int mouse_x, int mouse_y){
-    if (mouse_x > TAP_TO_START_X1 && mouse_y < TAP_TO_START_X2 &&
-        mouse_y > TAP_TO_START_Y1 && mouse_y < TAP_TO_START_Y2)
-        return true;
-    return false;
-}
-
-void displayStarting(window & win){
-    bool game_started = false;
-    bool quit = false;
-    while (quit || !game_started){
-        win.draw_png(STARTING_SCREEN_DIRECTORY, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        HANDLE(
-                QUIT(quit = true);
-        KEY_PRESS(q, quit = true);
-        LCLICK({
-                       if (clickedStart(mouse_x, mouse_y))
-                       game_started = true;
-               });
-        );
-
-        win.update_screen();
-        DELAY(10);
-    }
-}
-void init_game(window & win, Level & level, Player & player, Map<Block> &map){
-    displayStarting(win);
-    win.play_music("joke.mp3", -1);
-    readSavedata(player, level);
-    level.readLevelData();
-    level.decideZombieCountForEachSec();
-    map.initializeBlocks(X_UPPER_LEFT, Y_UPPER_LEFT, BLOCK_WIDTH, BLOCK_HEIGHT);
-    player.sun_count = INIT_SUN_COUNT;
-    player.is_first_click_made = false;
-}
+/**
+ * @brief Отображает всех зомби на экране.
+ * 
+ * Итерация по вектору зомби и отрисовка каждого в его соответствующем местоположении 
+ * в зависимости от его строки и вертикальных ограничений карты.
+ * 
+ * @param win Объект окна, в котором будут отрисовываться зомби.
+ * @param zombies Вектор объектов Zombie, которые нужно отобразить.
+ * @param map Ссылка на объект Map<Block>, который используется для определения вертикальных ограничений для каждого зомби.
+ * 
+ * @return void
+ * 
+ * @note Нет
+ */
+void displayZombies(window & win, std::vector<Zombie> & zombies, const Map<Block> &map);
+/**
+ * @brief Отображает все горохи на экране.
+ * 
+ * Итерация по вектору указателей на объекты Pea и отрисовка каждого в его соответствующем местоположении на экране.
+ * Горохи отображаются только если они находятся в пределах горизонтальных границ карты и на определенном расстоянии от края.
+ * 
+ * @param win Объект окна, в котором будут отрисовываться горохи.
+ * @param peas Вектор указателей на объекты Pea, которые нужно отобразить.
+ * @param map Ссылка на объект Map<Block>, который используется для определения горизонтальных и вертикальных ограничений для каждого гороха.
+ */
+void displayPeas(window & win, std::vector<Pea*> & peas, const Map<Block> &map);
+/**
+ * @brief Отображает все растения на экране.
+ * Итерация по вектору уникальных указателей на объекты Plant и отрисовка каждого растения в его соответствующем местоположении 
+ * в зависимости от его строки, столбца и границ карты. Функция различает типы растений (например, Walnut, Peashooter, Iceshooter, Sunflower)
+ * и отрисовывает соответствующее изображение для каждого типа.
+ * @param win Объект окна, в котором будут отрисовываться растения.
+ * @param plants Константная ссылка на вектор уникальных указателей на объекты Plant, которые нужно отобразить.
+ * @param map Ссылка на объект Map<Block>, который используется для определения горизонтальных и вертикальных ограничений для каждого растения.
+ * 
+ * @return void
+ */
+void displayPlants(window &win, const std::vector<std::unique_ptr<Plant>> &plants, const Map<Block> &map);
+/**
+ * @brief Отображает все солнца на экране.
+ * Итерация по вектору объектов Sun и отрисовка каждого в его соответствующем местоположении в зависимости от его столбца 
+ * и горизонтальных ограничений карты.
+ * @param win Объект окна, в котором будут отрисовываться солнца.
+ * @param suns Вектор объектов Sun, которые нужно отобразить.
+ * @param map Ссылка на объект Map<Block>, который используется для определения горизонтальных ограничений для каждого солнца.
+ * @return void
+ */
+void displaySuns(window & win, std::vector<Sun> suns, const Map<Block> &map);
+/**
+ * @brief Отображает все элементы игры (зомби, растения, горохи и солнца) на экране.
+ * Эта функция вызывает функции отображения для зомби, растений, горохов и солнц последовательно, чтобы отобразить 
+ * все элементы игры сразу.
+ * @param win Объект окна, в котором будут отрисовываться элементы игры.
+ * @param elements Ссылка на объект Elements, содержащий все элементы игры, которые нужно отобразить.
+ * @param map Ссылка на объект Map<Block>, который используется для определения ограничений для каждого элемента игры.
+ * @return void
+ */
+void displayGameElements(window &win, Elements &elements, const Map<Block> &map);
+/**
+ * @brief Отображает сообщение о поражении, когда игра завершена.
+ * Эта функция отображает сообщение о поражении, затемняющее экран и показывающее соответствующее изображение.
+ * @param win Объект окна, в котором будет отображаться сообщение о поражении.
+ * @return void
+ */
+void displayLosingMessage(window & win);
+/**
+ * @brief Отображает сообщение о победе, когда игрок выигрывает.
+ * Эта функция отображает сообщение о победе, затемняющее экран и показывающее соответствующее изображение.
+ * @param win Объект окна, в котором будет отображаться сообщение о победе.
+ * @return void
+ */
+void displayWinningMessage(window & win);
+/**
+ * @brief Проверяет, было ли нажато на иконку в панели иконок.
+ * Эта функция проверяет, был ли клик мыши в пределах границ панели иконок.
+ * @param mouse_x Координата x клика мыши.
+ * @param mouse_y Координата y клика мыши.
+ * @return true, если клик произошел в пределах панели иконок, иначе false.
+ */
+bool is_an_icon_chosen(int mouse_x, int mouse_y);
+/**
+ * @brief Обрабатывает события кликов во время игры.
+ * В зависимости от клика мыши эта функция обновляет выбор иконки игрока, подбирает солнца или размещает растения на карте
+ * в соответствии с выбранной иконкой.
+  * @param player Игрок, действия которого будут обновляться в зависимости от клика.
+ * @param icons Объект Icons, который управляет данными иконок.
+ * @param level Уровень игры, который содержит логику, специфичную для уровня.
+ * @param elements Объект Elements, который хранит все элементы игры.
+ * @param map Объект Map<Block>, который определяет расположение элементов игры.
+ * @param mouse_x Координата x клика мыши.
+ * @param mouse_y Координата y клика мыши.
+ * @return void
+ */
+void handleClick(Player & player, Icons & icons, Level & level, Elements & elements, Map<Block> &map, int mouse_x, int mouse_y);
+/**
+ * @brief Читает сохраненные данные игры и обновляет информацию об игроке и уровне.
+ * Эта функция читает сохраненные данные из файла и обновляет уровень игрока.
+ * @param player Игрок, чьи данные будут обновляться.
+ * @param level Уровень игры, который будет обновлен в зависимости от сохраненных данных.
+ * @return void
+ * @note Если файл не найден, выводится сообщение об ошибке.
+ */
+void readSavedata(Player & player, Level & level);
+/**
+ * @brief Проверяет, был ли кликнут на кнопку "Старт" на начальном экране.
+ * Эта функция проверяет, был ли клик мыши внутри границ кнопки "Старт".
+ * @param mouse_x Координата x клика мыши.
+ * @param mouse_y Координата y клика мыши.
+ * @return true, если клик был в пределах кнопки "Старт", иначе false.
+ */
+bool clickedStart(int mouse_x, int mouse_y);
+/**
+ * @brief Отображает начальный экран и ожидает взаимодействия с пользователем.
+ * Эта функция отображает начальный экран и ожидает клика или нажатия клавиши для начала игры или выхода.
+ * @param win Объект окна, в котором будет отображаться начальный экран.
+ * @return void
+ */
+void displayStarting(window & win);
+/**
+ * @brief Инициализирует игру, показывая начальный экран, воспроизводя музыку и загружая сохраненные данные.
+ * Эта функция настраивает начальное состояние игры, включая отображение начального экрана, загрузку сохраненных данных,
+ * инициализацию элементов игры и определение количества зомби для каждой секунды.
+ * @param win Объект окна, используемого для отображения игры.
+ * @param level Уровень игры, содержащий логику уровня.
+ * @param player Игрок, чьи данные и состояние будут инициализированы.
+ * @param map Карта игры, которая будет использована для настройки блоков.
+ * @return void
+ */
+void init_game(window & win, Level & level, Player & player, Map<Block> &map);
+void processEvents(bool &quit, bool &game_started, bool &mouse_click, int &mouse_x, int &mouse_y);

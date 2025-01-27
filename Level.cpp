@@ -60,14 +60,9 @@ void Level::generateWaveZombies(Elements &elements) {
     if (waves_finished) return;
     int zombie_cnt = zombie_distr_for_wave[cur_wave][cur_sec];
     Zombie temp;
-    temp.x_location = STUDENT_INIT_X;
-    temp.health = 10;
-    temp.is_moving = true;
-    temp.directory = STUDENT_HEALTHY_DIRECTORY;
-    temp.row = rand() % 5;
     for (int i = 0; i < zombie_cnt; i++) {
-        elements.addZombie(temp);
-        temp.row = (temp.row + 1 < 4) ? temp.row + 1 : 0;
+        elements.addZombie(std::make_unique<Zombie>(temp));
+        temp.setRow((temp.getRow() + 1 < 4) ? temp.getRow() + 1 : 0);
     }
     if (++cur_sec >= wave_duration[cur_wave]) {
         cur_sec = 0;
@@ -82,17 +77,17 @@ void Level::generateWaveZombies(Elements &elements) {
 void Level::handleChanges(Elements &elements, const Map<Block> &map, int clk) {
     elements.setAllZombiesMoving();
     elements.handlePea(map);
-    if (!waves_finished && clk % STUDENT_CREATE_TIME == 0) {
+    if (!waves_finished && clk % Zombie::CREATE_TIME == 0) {
         generateWaveZombies(elements);
     }
-    if (clk % BYTE_TIME == 0) {
+    if (clk % Zombie::BYTE_TIME == 0) {
         elements.handlePlant(map);
     }
-    if (clk % FIRE_PEA_TIME == 0)
+    if (clk % Pea::FIRE_TIME == 0)
         elements.firePeas(map);
-    if (clk % SKY_SUN_TIME == 0)
+    if (clk % Sun::SKY_TIME == 0)
         elements.genSkySun();
-    if (clk % SUNFLOWER_SUN_TIME == 0) {
+    if (clk % Sun::SUNFLOWER_TIME == 0) {
         for (const auto &plant : elements.plants) {
             auto* sunflower = dynamic_cast<Sunflower*>(plant.get());
             if (sunflower != nullptr && sunflower->canGenerate(clk)) {

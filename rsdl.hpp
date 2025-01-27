@@ -35,43 +35,45 @@ const RGB BLACK(0, 0, 0);
 
 class window {
 public:
-	window(int width=800, int height=400, std::string title="RSDL");
+	window(int width=800, int height=400, std::string title="kaf12meowmeow");
 	~window();
-	void draw_bmp(std::string filename, int x, int y, int width, int height);
-	void draw_png(std::string filename, int x, int y, int width, int height);
-	void draw_png(std::string filename, int x, int y, int width, int height, int angle);
-    void show_text(std::string input, int x=0, int y=0, RGB color=WHITE, std::string font_addr="FreeSans.ttf", int size=24);
-    void draw_bg(std::string filename, int x=0, int y=0);
+    void draw_texture(const std::string &filename, int x, int y, int width, int height, int angle);
+	void draw_bmp(const std::string &filename, int x, int y, int width, int height);
+	void draw_png(const std::string &filename, int x, int y, int width, int height);
+	void draw_png(const std::string &filename, int x, int y, int width, int height, int angle);
+	void draw_bg(const std::string &filename, int x=0, int y=0);
 	void update_screen();
+	void clear_screen() { fill_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, {0, 0, 0}); }
     void fill_rect(int x, int y, int width, int height, RGB color=WHITE);
     void draw_line(int x1, int y1, int x2, int y2, RGB color=WHITE);
     void draw_point(int x, int y, RGB color=WHITE);
     void draw_rect(int x, int y, int width, int height, RGB color=WHITE);
-    void play_music(std::string filename, int loops = -1); 
+    void play_music(const std::string &filename, int loops);
     void stop_music();
     void pause_music();
     void resume_music();
+    static constexpr int TAP_TO_START_X1 = 230;
+    static constexpr int TAP_TO_START_X2 = 796;
+    static constexpr int TAP_TO_START_Y1 = 520;
+    static constexpr int TAP_TO_START_Y2 = 585;
+    static const int WIDTH = 1050;
+    static const int HEIGHT = 600;
 private:
-    const int WINDOW_WIDTH;
-    const int WINDOW_HEIGHT;
-	SDL_Window* win;
-	SDL_Renderer* renderer;
-	std::map<std::string, SDL_Texture*> texture_cache;
-    std::map<std::string, TTF_Font*> fonts_cache;
+    SDL_Texture *load_texture(const std::string &filename);
 	void set_color(RGB color);
 	void dump_err() { std::cerr << SDL_GetError() << '\n'; }
 	void init();
+	void create_window(const std::string &title);     // Создание окна и рендера
+	void cleanup_resources(); 
+	SDL_Window* win;
+	SDL_Renderer* renderer;
+	std::map<std::string, SDL_Texture*> texture_cache;
+	std::map<std::string, TTF_Font*> fonts_cache;
 	Mix_Music* music;
+	const int WINDOW_WIDTH;
+	const int WINDOW_HEIGHT;
 };
 
-#define HANDLE(A)   SDL_Event e; while (SDL_PollEvent(&e) != 0) { A }
-#define QUIT(Code) if (e.type == SDL_QUIT) { Code ; }
-#define LCLICK(Code) if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) { int mouse_x = e.button.x; int mouse_y = e.button.y; Code ; }
-#define RCLICK(Code) if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) { int mouse_x = e.button.x; int mouse_y = e.button.y; Code ; }
-#define KEY_PRESS(Char, Code) if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_##Char) { Code ; }
-#define LRELEASE(Code) if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT) { int mouse_x = e.button.x; int mouse_y = e.button.y; Code ; }
-#define RRELEASE(Code) if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_RIGHT) { int mouse_x = e.button.x; int mouse_y = e.button.y; Code ; }
 
-#define DELAY(Millis) SDL_Delay(Millis)
 
 #endif

@@ -10,6 +10,7 @@ message(STATUS "Версия CMake: ${CMAKE_VERSION}")
 message(STATUS "Сборка с C++${CMAKE_CXX_STANDARD}")
 
 set(SOURCE_FILES
+	ThreadPool.cpp
     Block.cpp
     Elements.cpp
     Firepea.cpp
@@ -28,6 +29,7 @@ set(SOURCE_FILES
     main.cpp
     Pea.cpp
     rsdl.cpp
+    Display.cpp
 )
 
 include_directories(/usr/local/include)

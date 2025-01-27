@@ -3,16 +3,16 @@
 
 
 Firepea::Firepea() {
-    directory = C2_DIRECTORY;
+    directory = DIRECTORY;
 }
-void Firepea::applyEffect(Zombie &zombie){
-    zombie.addEffect("fire");
-    if (zombie.hasEffect("fire") && zombie.hasEffect("ice")) {
-        zombie.removeEffect("fire");
-        zombie.removeEffect("ice");
+void Firepea::applyEffect(Zombie *zombie){
+    zombie->addEffect("fire");
+    if (zombie->hasEffect("fire") && zombie->hasEffect("ice")) {
+        zombie->removeEffect("fire");
+        zombie->removeEffect("ice");
     }
-    else if (zombie.hasEffect("fire")) {
-        zombie.health -= 1;
+    else if (zombie->hasEffect("fire")) {
+        zombie->applyDamage(1);
     }
-    zombie.health -= 1;
+    zombie->applyDamage(1);
 }
